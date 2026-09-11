@@ -932,7 +932,14 @@
             margin-bottom: 18px;
         }
 
-        .comment-form input { border-radius: 999px; }
+        .comment-form textarea {
+            flex: 1 1 auto;
+            min-width: 0;
+            height: 42px;
+            min-height: 42px;
+            resize: none;
+            border-radius: 14px;
+        }
 
         .comment-identity {
             flex: 0 0 170px;
@@ -1258,6 +1265,43 @@
             .feedback-card-date { font-size: 10px; }
             .feed-navigation { gap: 6px; }
             .feed-navigation button { flex: 1 1 0; min-width: 0; min-height: 32px; padding: 7px 6px; font-size: 10px; }
+            .comment-form {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: 8px;
+                align-items: center;
+            }
+            .comment-form textarea {
+                grid-column: 1 / -1;
+                width: 100%;
+                height: auto;
+                min-height: 52px;
+                padding: 10px 12px;
+                border-radius: 12px;
+                font-size: 13px;
+                resize: vertical;
+            }
+            .anonymous-comment-toggle {
+                min-height: 32px;
+                gap: 5px;
+                font-size: 10px;
+                white-space: nowrap;
+            }
+            .anonymous-comment-toggle .toggle-pill {
+                width: 38px;
+                height: 20px;
+            }
+            .anonymous-comment-toggle .toggle-pill .toggle-knob {
+                top: 3px;
+                left: 3px;
+                width: 14px;
+                height: 14px;
+            }
+            .comment-form > button {
+                min-height: 32px;
+                padding: 7px 10px;
+                font-size: 11px;
+            }
             .auth-card { padding: 22px 18px; }
             .auth-card .subtitle { font-size: 12px; }
             .auth-card label { font-size: 12px; }
@@ -1604,10 +1648,10 @@
                             </article>
                             <h3 class="comment-heading">Write a comment</h3>
                             <form class="comment-form" data-comment="${escapeHtml(item.date)}">
-                                <input type="text" placeholder="Write a comment..." required>
+                                <textarea rows="2" placeholder="Write a comment..." required></textarea>
                                 <div class="anonymous-comment-toggle">
                                     <span>Anonymous</span>
-                                    <button type="button" id="anonymous-comment-toggle" class="toggle-pill" aria-label="Toggle anonymous comment" aria-pressed="false" data-enabled="false"><span class="toggle-knob"></span></button>
+                                    <button type="button" class="toggle-pill anonymous-comment-button" aria-label="Toggle anonymous comment" aria-pressed="false" data-enabled="false"><span class="toggle-knob"></span></button>
                                 </div>
                                 <button type="submit">Comment</button>
                             </form>
@@ -1774,7 +1818,7 @@
             });
 
             document.querySelectorAll("[data-comment]").forEach((commentForm) => {
-                const anonToggle = commentForm.querySelector("#anonymous-comment-toggle");
+                const anonToggle = commentForm.querySelector(".anonymous-comment-button");
                 if (anonToggle) {
                     setToggleState(anonToggle, false);
                     anonToggle.addEventListener("click", (e) => {
@@ -1786,8 +1830,8 @@
                 commentForm.addEventListener("submit", async (event) => {
                     event.preventDefault();
                     const response = responses.find((item) => item.date === commentForm.dataset.comment);
-                    const input = commentForm.querySelector("input[type=text]");
-                    const anonToggle = commentForm.querySelector("#anonymous-comment-toggle");
+                    const input = commentForm.querySelector("textarea");
+                    const anonToggle = commentForm.querySelector(".anonymous-comment-button");
                     const isAnonymous = anonToggle && anonToggle.dataset.enabled === "true";
                     const message = input.value.trim();
                     const commentName = currentProfile?.name || "Anonymous";
