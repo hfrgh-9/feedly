@@ -1,0 +1,1960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FEEDLY | Learning Feedback and Evaluation System</title>
+    <style>
+        :root {
+            --burgundy: #4f8583;
+            --burgundy-dark: #202a30;
+            --burgundy-light: #a9cfcc;
+            --dark-gray: #20272c;
+            --gray-light: #2b343a;
+            --gray-lighter: #c2ced1;
+            --white-text: #edf3f3;
+            --cream: #e1ecec;
+            --shadow: 0 14px 32px rgba(8, 13, 16, 0.38);
+            --shadow-sm: 0 5px 14px rgba(8, 13, 16, 0.3);
+            --workspace-gray: #343c42;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            color: var(--white-text);
+            background: var(--workspace-gray);
+            font-family: "Aptos", "Segoe UI", sans-serif;
+            line-height: 1.45;
+        }
+
+        button, input, select, textarea { font: inherit; }
+        button { cursor: pointer; }
+
+        h1, h2, h3, .brand strong, .auth-card h1 {
+            font-family: "Aptos Display", "Aptos", "Segoe UI", sans-serif;
+        }
+
+        .app-shell {
+            display: flex;
+            min-height: 100vh;
+            background: var(--workspace-gray);
+        }
+
+        .auth-screen {
+            display: grid;
+            min-height: 100vh;
+            place-items: center;
+            padding: clamp(16px, 4vw, 40px);
+            background: var(--dark-gray);
+            background-image: linear-gradient(135deg, rgba(23, 125, 120, 0.2), transparent 46%), linear-gradient(315deg, rgba(213, 224, 227, 0.08), transparent 42%);
+        }
+
+        .auth-screen[hidden],
+        .app-shell[hidden] { display: none !important; }
+
+        .auth-card {
+            --auth-control-width: min(100%, 330px);
+            --auth-control-height: 38px;
+            width: min(440px, 100%);
+            padding: clamp(22px, 4vw, 32px);
+            border: 1px solid rgba(255, 255, 255, 0.92);
+            border-radius: 14px;
+            background: var(--gray-light);
+            box-shadow: 0 0 7px rgba(255, 255, 255, 0.52), 0 0 22px rgba(216, 217, 223, 0.24), var(--shadow);
+        }
+
+        .auth-card::before {
+            content: "F";
+            display: grid;
+            place-items: center;
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 12px;
+            border-radius: 14px;
+            color: white;
+            background: var(--burgundy);
+            font-size: 22px;
+            font-weight: 900;
+            box-shadow: 0 4px 12px rgba(23, 125, 120, 0.4);
+        }
+
+        .auth-card h1 { margin: 0 0 5px; color: var(--burgundy-light); font-size: clamp(22px, 5vw, 28px); text-align: center; }
+        .auth-card .subtitle { margin-bottom: 22px; color: var(--gray-lighter); text-align: center; }
+        .auth-mode { margin: 0 0 18px; color: var(--cream); font-size: 13px; font-weight: bold; text-align: center; letter-spacing: .8px; text-transform: uppercase; }
+        .auth-card form { width: var(--auth-control-width); margin: 0 auto; }
+        .auth-card label { display: block; margin: 16px 0 6px; color: var(--cream); line-height: 1.2; }
+        .auth-card input,
+        .auth-card select {
+            display: block;
+            width: var(--auth-control-width);
+            height: var(--auth-control-height);
+            min-height: var(--auth-control-height);
+            margin: 0;
+            padding: 9px 12px;
+            border: 1px solid rgba(216, 217, 223, 0.38);
+            border-radius: 7px;
+            color: var(--white-text);
+            background: #1b2227;
+            line-height: 1.2;
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.22);
+        }
+        .auth-card input:focus, .auth-card select:focus { border-color: var(--burgundy-light); box-shadow: 0 0 0 3px rgba(216, 217, 223, 0.12); }
+        .auth-card .row { grid-template-columns: 1fr; gap: 0; }
+        .auth-card .row > div { width: 100%; }
+        .auth-card .primary,
+        .auth-card .auth-switch {
+            display: block;
+            width: var(--auth-control-width);
+            height: var(--auth-control-height);
+            min-height: var(--auth-control-height);
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+        }
+        .auth-card .primary,
+        .auth-switch { color: white; background: var(--burgundy); font-size: 13px; font-weight: bold; }
+        .auth-card .primary:hover,
+        .auth-switch:hover { color: white; background: var(--burgundy-light); }
+
+        .auth-switch {
+            margin-top: 0;
+            padding: 10px 12px;
+            border: 1px solid var(--burgundy);
+            border-radius: 8px;
+        }
+
+        .auth-divider { margin: 18px 0 8px; color: var(--gray-lighter); font-size: 12px; text-align: center; }
+        .auth-error { color: #f2b6a5; font-size: 12px; margin: 12px 0 0; }
+        .account-bar { display: flex; align-items: center; gap: 10px; }
+        .account-info { color: var(--gray-lighter); font-size: 12px; text-align: right; }
+        .account-info strong { display: block; color: var(--cream); }
+        .logout-button { padding: 8px 10px; border: 1px solid var(--burgundy-light); border-radius: 6px; color: var(--cream); background: transparent; font-size: 11px; }
+        .mobile-account-bar { display: none; }
+        .status-toast {
+            display: none;
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            z-index: 20;
+            padding: 11px 15px;
+            border: 1px solid var(--burgundy-light);
+            border-radius: 7px;
+            color: var(--cream);
+            background: var(--burgundy);
+            box-shadow: var(--shadow-sm);
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .status-toast.show { display: block; animation: slideUp .3s ease; }
+
+        .sidebar {
+            width: 248px;
+            padding: 26px 18px;
+            color: var(--white-text);
+            background: var(--burgundy-dark);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 12px rgba(20, 10, 15, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .brand { 
+            display: flex; 
+            align-items: center; 
+            gap: 11px; 
+            margin: 0 12px 40px; 
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .brand-mark { 
+            display: grid; 
+            place-items: center; 
+            width: 42px; 
+            height: 42px; 
+            border-radius: 12px; 
+            color: white;
+            background: var(--burgundy);
+            font-weight: 900;
+            box-shadow: 0 4px 12px rgba(23, 125, 120, 0.4);
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        .brand strong { 
+            display: block; 
+            font-size: 19px; 
+            letter-spacing: .3px;
+            color: var(--cream);
+        }
+
+        .brand small { 
+            color: var(--gray-lighter); 
+            font-size: 11px; 
+        }
+
+        .nav-label { 
+            margin: 0 12px 10px; 
+            color: var(--gray-lighter); 
+            font-size: 10px; 
+            letter-spacing: 1.6px; 
+            font-weight: bold; 
+            text-transform: uppercase;
+        }
+
+        .nav-button { 
+            width: 100%; 
+            min-height: 44px;
+            padding: 13px 14px; 
+            border: 2px solid transparent;
+            border-radius: 9px; 
+            color: var(--white-text); 
+            background: transparent; 
+            text-align: left;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            animation: slideInLeft 0.5s ease;
+            animation-fill-mode: both;
+        }
+
+        .nav-button:nth-child(1) { animation-delay: 0.1s; }
+        .nav-button:nth-child(2) { animation-delay: 0.2s; }
+        .nav-button:nth-child(3) { animation-delay: 0.3s; }
+        .nav-button:nth-child(4) { animation-delay: 0.4s; }
+
+        .nav-button:hover { 
+            color: var(--cream);
+            background: var(--burgundy);
+            border-color: var(--burgundy-light);
+            transform: translateX(6px);
+            box-shadow: 0 4px 12px rgba(23, 125, 120, 0.3);
+        }
+
+        .nav-button.active { 
+            color: var(--cream);
+            background: var(--burgundy);
+            border-color: var(--burgundy-light);
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-button span { 
+            display: inline-block; 
+            width: 31px; 
+            color: var(--burgundy-light);
+            font-size: 18px;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-button:hover span {
+            transform: scale(1.15);
+        }
+
+        .tip { 
+            margin-top: auto; 
+            padding: 15px; 
+            border: 2px solid var(--burgundy);
+            border-radius: 10px; 
+            color: var(--cream); 
+            background: rgba(23, 125, 120, 0.2);
+            font-size: 12px; 
+            line-height: 1.5;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .tip b { 
+            display: block; 
+            margin-bottom: 5px; 
+            color: var(--burgundy-light); 
+        }
+
+        main { 
+            width: min(1200px, 100%); 
+            min-width: 0;
+            padding: 42px 48px; 
+            margin: 0 auto; 
+        }
+
+        .topbar { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start; 
+            margin-bottom: 26px;
+            animation: fadeIn 0.8s ease;
+        }
+
+        h1, h2, p { margin-top: 0; }
+
+        h1 { 
+            margin-bottom: 6px; 
+            color: var(--burgundy-light);
+            font-size: clamp(25px, 3vw, 34px);
+            letter-spacing: .1px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle { 
+            margin-bottom: 0; 
+            color: var(--gray-lighter); 
+            font-size: 14px; 
+        }
+
+        .content-grid { 
+            display: grid; 
+            grid-template-columns: 1.15fr .85fr; 
+            gap: 26px; 
+            align-items: start; 
+        }
+
+        .app-shell:not(.focused-feedback-view):not(.feedback-form-view) .content-grid {
+            grid-template-columns: 1.15fr .85fr;
+        }
+
+        .app-shell:not(.focused-feedback-view):not(.feedback-form-view) #feedback-panel,
+        .app-shell:not(.focused-feedback-view):not(.feedback-form-view) #recent-panel {
+            display: block;
+        }
+
+        .panel { 
+            padding: 30px; 
+            border: 2px solid var(--burgundy);
+            border-radius: 12px; 
+            background: var(--gray-light);
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .panel:hover {
+            border-color: var(--burgundy-light);
+            box-shadow: 0 12px 30px rgba(23, 125, 120, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .panel-heading { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            gap: 12px; 
+            margin-bottom: 22px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--burgundy);
+        }
+
+        h2 { 
+            margin-bottom: 0; 
+            color: var(--burgundy-light);
+            font-size: 20px; 
+            line-height: 1.25; 
+        }
+
+        .tiny-note { 
+            color: var(--gray-lighter); 
+            font-size: 11px; 
+        }
+
+        label {
+            display: block;
+            margin: 16px 0 7px;
+            color: var(--cream);
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 11px 12px;
+            border: 2px solid var(--burgundy);
+            border-radius: 7px;
+            color: var(--white-text);
+            background: var(--dark-gray);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus { 
+            border-color: var(--burgundy-light);
+            box-shadow: 0 0 0 3px rgba(23, 125, 120, 0.2);
+        }
+
+        textarea { 
+            min-height: 110px; 
+            resize: vertical; 
+        }
+
+        .row { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 16px; 
+        }
+
+        .rating { 
+            display: flex; 
+            gap: 8px; 
+        }
+
+        .rating button {
+            width: 40px; 
+            height: 38px; 
+            padding: 0; 
+            border: 2px solid var(--burgundy);
+            border-radius: 7px; 
+            color: var(--burgundy-light);
+            background: transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .rating button:hover {
+            background: var(--burgundy);
+            color: var(--cream);
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(23, 125, 120, 0.3);
+        }
+
+        .rating button.selected {
+            border-color: #f2d39a;
+            color: #1a1418;
+            background: linear-gradient(135deg, var(--burgundy-light), #c9b887);
+            box-shadow: 0 0 0 3px rgba(242, 211, 154, 0.22), 0 6px 16px rgba(23, 125, 120, 0.35);
+            font-weight: 800;
+            transform: translateY(-1px) scale(1.04);
+        }
+
+        .primary { 
+            width: 100%; 
+            padding: 12px 16px; 
+            margin-top: 22px; 
+            border: 0; 
+            border-radius: 7px; 
+            color: white;
+            background: var(--burgundy);
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .primary:hover { 
+            background: var(--burgundy-light);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(23, 125, 120, 0.4);
+        }
+
+        .primary:active {
+            transform: translateY(0);
+        }
+
+        .filter-bar { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 13px; 
+        }
+
+        .filter-bar input,
+        .filter-bar select {
+            height: 40px;
+            border: 1px solid rgba(169, 207, 204, 0.34);
+            border-radius: 999px;
+            background: #20282d;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22);
+        }
+
+        .filter-bar input {
+            flex: 1 1 auto;
+            min-width: 0;
+            padding-left: 16px;
+        }
+
+        .filter-bar select { 
+            flex: 0 0 142px;
+            width: 142px;
+            padding-left: 13px;
+        }
+
+        .filter-bar input:focus,
+        .filter-bar select:focus { border-color: var(--burgundy-light); box-shadow: 0 0 0 3px rgba(79, 133, 131, 0.2); }
+
+        .app-shell.detail-view .filter-bar { display: none; }
+
+        .anonymous-choice { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            gap: 12px; 
+            margin-top: 10px; 
+            color: var(--gray-lighter); 
+            font-size: 11px; 
+            padding-right: 4px;
+        }
+
+        .toggle-pill {
+            position: relative;
+            width: 42px;
+            height: 22px;
+            padding: 0;
+            border: 0;
+            border-radius: 999px;
+            background: #5a5a5a;
+            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .toggle-pill .toggle-knob {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--white-text);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            transition: transform 0.25s ease;
+        }
+
+        .toggle-pill.on {
+            background: linear-gradient(135deg, #176f70, #c88b44);
+            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.12), 0 0 0 4px rgba(200, 139, 68, 0.18);
+        }
+
+        .toggle-pill.on .toggle-knob {
+            transform: translateX(20px);
+            background: #fffaf0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
+        }
+
+        .feedback-item { 
+            display: flex; 
+            flex-direction: column; 
+            padding: 15px;
+            border-left: 4px solid #b0936c;
+            border-radius: 10px; 
+            background: linear-gradient(180deg, #354047 0%, #293238 100%);
+            transition: all 0.3s ease;
+            animation: slideUp 0.5s ease;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+            cursor: pointer;
+        }
+
+        .feedback-item:hover {
+            border-left-color: #f2d39a;
+            background: linear-gradient(180deg, #443f4b 0%, #2f2c34 100%);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .feedback-item:focus-visible {
+            outline: 3px solid var(--burgundy-light);
+            outline-offset: 3px;
+        }
+
+        .feedback-item h3 { 
+            margin: 0 0 7px; 
+            color: var(--burgundy-light);
+            font-size: 16px; 
+            line-height: 1.25; 
+        }
+
+        .feedback-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .feedback-card-header h3 { flex: 1; }
+        .feedback-owner-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+
+        .feedback-item p { 
+            margin: 0 0 8px; 
+            color: var(--white-text); 
+            font-size: 14px; 
+            line-height: 1.6; 
+            text-align: justify;
+        }
+
+        .reply-preview { 
+            display: block; 
+            overflow: hidden; 
+            margin: 8px 0 0; 
+            padding: 8px 10px; 
+            border-left: 2px solid var(--burgundy);
+            border-radius: 0 5px 5px 0; 
+            color: var(--white-text);
+            background: rgba(23, 125, 120, 0.15);
+            font-size: 12px; 
+            line-height: 1.4; 
+        }
+
+        .reply-thread { 
+            margin-top: 11px; 
+            padding: 9px 0 0 14px; 
+            border-top: 1px solid var(--burgundy);
+            border-left: 2px solid var(--burgundy);
+        }
+
+        .reply-heading { 
+            margin-bottom: 7px; 
+            color: var(--gray-lighter); 
+            font-size: 10px; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+        }
+
+        .reply-item { 
+            padding: 7px 0 7px 10px; 
+            border-bottom: 1px solid rgba(23, 125, 120, 0.2);
+        }
+
+        .reply-item:last-child { 
+            border-bottom: 0; 
+        }
+
+        .reply-author { 
+            color: var(--burgundy-light);
+            font-weight: bold; 
+        }
+
+        .reply-role { 
+            margin-left: 5px; 
+            color: var(--gray-lighter); 
+            font-size: 10px; 
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .reply-text {
+            color: var(--white-text);
+            font-size: 13px;
+            text-align: justify;
+        }
+
+        .reply-reactions { 
+            display: flex; 
+            gap: 4px; 
+            margin-top: 5px; 
+            flex-wrap: wrap;
+        }
+
+        .reply-reaction { 
+            padding: 4px 8px; 
+            border: 1px solid var(--burgundy);
+            border-radius: 5px; 
+            color: var(--burgundy-light);
+            background: transparent;
+            font-size: 10px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .reply-reaction:hover {
+            background: rgba(23, 125, 120, 0.2);
+            transform: scale(1.05);
+        }
+
+        .reply-reaction.reacted { 
+            color: var(--cream);
+            border-color: var(--burgundy-light);
+            background: var(--burgundy);
+        }
+
+        .feedback-meta { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            gap: 10px; 
+            color: var(--gray-lighter); 
+            font-size: 11px;
+            margin-top: 10px;
+        }
+
+        .tag { 
+            padding: 4px 10px; 
+            border-radius: 10px; 
+            color: var(--cream);
+            background: var(--burgundy);
+            font-weight: bold;
+            border: 1px solid var(--burgundy-light);
+        }
+
+        .details-toggle { 
+            margin-top: 8px; 
+            padding: 7px 10px;
+            border: 1px solid #f2d39a; 
+            border-radius: 6px;
+            color: #1b1115;
+            background: linear-gradient(135deg, var(--burgundy-light), #cfc3a4);
+            font-size: 11px; 
+            font-weight: 800;
+            transition: all 0.25s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(200, 139, 68, 0.28);
+        }
+
+        .details-toggle:hover { 
+            color: #1a1114;
+            background: linear-gradient(135deg, #cfc3a4, var(--burgundy-light));
+            transform: translateX(3px) scale(1.02);
+        }
+
+        .teacher-inline {
+            margin-top: 6px;
+            color: var(--cream);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .teacher-inline strong {
+            color: #f2d39a;
+        }
+
+        .teacher-stars {
+            display: block;
+            margin-top: 4px;
+            color: #f2d39a;
+            font-size: 12px;
+            letter-spacing: 1px;
+            font-weight: 900;
+        }
+
+        .feedback-actions { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 6px; 
+            margin-top: 11px; 
+        }
+
+        .feedback-card-footer {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .feedback-card-footer .feedback-actions { margin-top: 0; }
+        .feedback-card-date { flex: 0 0 auto; color: var(--gray-lighter); font-size: 11px; text-align: right; }
+
+        .feedback-actions .reaction-button,
+        .feedback-actions .comment-count-button,
+        .feedback-actions .feedback-edit,
+        .feedback-actions .feedback-delete {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .comment-count-button {
+            min-width: 40px;
+            padding: 7px 11px;
+            border: 1px solid var(--burgundy);
+            border-radius: 6px;
+            color: var(--burgundy-light);
+            background: transparent;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .comment-count-button:hover {
+            color: var(--cream);
+            background: rgba(23, 125, 120, 0.2);
+            transform: scale(1.08);
+        }
+
+        .feedback-edit,
+        .feedback-delete {
+            min-width: 40px;
+            padding: 7px 11px;
+            border: 1px solid rgba(169, 207, 204, 0.42);
+            border-radius: 6px;
+            color: var(--gray-lighter);
+            background: transparent;
+            font-size: 12px;
+        }
+
+        .feedback-edit:hover { color: var(--white-text); background: rgba(79, 133, 131, 0.28); }
+        .feedback-delete:hover { color: #ffd5d1; background: rgba(171, 73, 67, 0.28); border-color: #d08a84; }
+
+        .feedback-edit-form { display: grid; gap: 4px; }
+        .feedback-edit-form .edit-actions { display: flex; gap: 8px; margin-top: 14px; }
+        .feedback-edit-form .edit-actions button { flex: 1; }
+        .edit-back { border: 1px solid rgba(169, 207, 204, 0.42); color: var(--gray-lighter); background: transparent; }
+
+        .reaction-button { 
+            min-width: 40px; 
+            padding: 7px 11px; 
+            border: 1px solid var(--burgundy);
+            border-radius: 6px; 
+            color: var(--burgundy-light);
+            background: transparent;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .reaction-button:hover { 
+            color: var(--cream);
+            background: rgba(23, 125, 120, 0.2);
+            transform: scale(1.08);
+        }
+
+        .reaction-button.reacted { 
+            color: var(--cream);
+            border-color: var(--burgundy-light);
+            background: var(--burgundy);
+        }
+
+        .reply-form { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 7px; 
+            width: 100%; 
+            margin-top: 10px; 
+            align-items: center; 
+        }
+
+        .reply-form input[type="text"] { 
+            flex: 1 1 180px; 
+            min-width: 0;
+        }
+
+        .reply-role-select { 
+            flex: 0 0 120px; 
+            min-width: 0;
+        }
+
+        .reply-anonymous { 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 8px; 
+            margin: 0; 
+            color: var(--gray-lighter); 
+            font-size: 10px; 
+            font-weight: bold; 
+        }
+
+        .mini-toggle {
+            width: 38px;
+            height: 20px;
+        }
+
+        .mini-toggle .toggle-knob {
+            width: 14px;
+            height: 14px;
+            top: 3px;
+            left: 3px;
+        }
+
+        .mini-toggle.on .toggle-knob {
+            transform: translateX(18px);
+        }
+
+        .reply-form button { 
+            padding: 8px 12px; 
+            border: 2px solid var(--burgundy);
+            border-radius: 6px; 
+            color: var(--cream);
+            background: var(--burgundy);
+            font-size: 11px; 
+            font-weight: bold;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .reply-form button:hover { 
+            background: var(--burgundy-light);
+            border-color: var(--burgundy-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(23, 125, 120, 0.3);
+        }
+
+        .reply-form button:active {
+            transform: translateY(0);
+        }
+
+        .feedback-item.collapsed .reply-thread { 
+            display: none; 
+        }
+
+        .feedback-detail { animation: fadeInUp 0.4s ease; }
+
+        .back-button {
+            margin-bottom: 18px;
+            padding: 8px 12px;
+            border: 1px solid var(--burgundy-light);
+            border-radius: 6px;
+            color: var(--cream);
+            background: transparent;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .back-button:hover { background: var(--burgundy); }
+
+        .feedback-detail-card {
+            padding-bottom: 18px;
+            border-bottom: 2px solid var(--burgundy);
+        }
+
+        .feedback-detail-card h3 {
+            margin: 0 0 10px;
+            color: var(--burgundy-light);
+            font-size: 22px;
+        }
+
+        .feedback-detail-card p {
+            color: var(--white-text);
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+
+
+        .feedback-date { color: var(--gray-lighter); font-size: 11px; }
+
+        .main-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--burgundy);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .comment-heading {
+            margin: 22px 0 10px;
+            color: var(--burgundy-light);
+            font-size: 17px;
+        }
+
+        .comment-form {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .comment-form input { border-radius: 999px; }
+
+        .comment-identity {
+            flex: 0 0 170px;
+            width: auto;
+            padding: 9px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+        }
+
+        .comment-form button {
+            flex: 0 0 auto;
+            padding: 10px 15px;
+            border: 0;
+            border-radius: 999px;
+            color: white;
+            background: var(--burgundy);
+            font-weight: bold;
+        }
+
+        .comment-form button:hover { background: var(--burgundy-light); }
+
+        .anonymous-comment-toggle {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--gray-lighter);
+        }
+
+        .thoughts-box {
+            padding: 14px 16px;
+            margin: 14px 0;
+            border-left: 3px solid var(--burgundy);
+            background: rgba(79, 133, 131, 0.12);
+            border-radius: 6px;
+            color: var(--white-text);
+            font-size: 15px;
+            line-height: 1.8;
+        }
+
+        .comment-item { position: relative; }
+
+        .comment-delete-btn {
+            position: absolute;
+            top: 12px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            color: #d08a84;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px 8px;
+            opacity: 0.7;
+        }
+
+        .comment-delete-btn:hover { opacity: 1; }
+
+        .highlight { background-color: rgba(79, 133, 131, 0.4); padding: 1px 3px; border-radius: 2px; }
+
+        .comment-list { display: grid; gap: 10px; }
+
+        .comment-item {
+            padding: 12px 15px;
+            border: 1px solid rgba(216, 217, 223, 0.22);
+            border-radius: 18px;
+            background: #354047;
+        }
+
+        .comment-item p {
+            margin: 4px 0 6px;
+            color: var(--white-text);
+            font-size: 14px;
+        }
+
+        .comment-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .comment-reactions { display: flex; flex-wrap: wrap; gap: 4px; }
+        .comment-reaction { padding: 3px 7px; border: 1px solid rgba(169, 207, 204, 0.34); border-radius: 999px; color: var(--gray-lighter); background: transparent; font-size: 10px; }
+        .comment-reaction:hover, .comment-reaction.reacted { color: var(--white-text); background: rgba(79, 133, 131, 0.3); }
+
+        .comment-author {
+            color: var(--cream);
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .feedback-list { 
+            display: grid; 
+            gap: 10px; 
+        }
+
+        .empty { 
+            padding: 25px 10px; 
+            color: var(--gray-lighter); 
+            text-align: center; 
+            font-size: 13px; 
+        }
+
+        .previous-section { 
+            margin-top: 13px; 
+            padding-top: 12px; 
+            border-top: 2px solid var(--burgundy); 
+        }
+
+        .previous-toggle { 
+            width: 100%; 
+            padding: 9px; 
+            border: 2px solid var(--burgundy);
+            border-radius: 6px; 
+            color: var(--burgundy-light);
+            background: transparent;
+            font-size: 11px; 
+            font-weight: bold;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .previous-toggle:hover { 
+            background: var(--burgundy);
+            color: var(--cream);
+            transform: translateY(-2px);
+        }
+
+        .previous-list { 
+            display: grid; 
+            gap: 10px; 
+            margin-top: 10px; 
+        }
+
+        .feed-navigation { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+        .feed-navigation button { flex: 1 1 150px; min-height: 40px; padding: 9px 14px; border: 1px solid var(--burgundy); border-radius: 999px; color: var(--cream); background: transparent; font-size: 13px; font-weight: bold; transition: background .2s ease, color .2s ease, transform .2s ease; }
+        .feed-navigation button:hover { color: var(--white-text); background: var(--burgundy); }
+        .feed-navigation button:active { transform: translateY(1px); }
+        .feed-navigation button[hidden] { display: none; }
+
+        .topic-list { 
+            display: grid; 
+            gap: 14px; 
+        }
+
+        .topic { 
+            display: grid; 
+            grid-template-columns: 1fr 42px; 
+            gap: 8px; 
+            align-items: center;
+            padding: 10px;
+            border-radius: 6px;
+            background: #383838;
+            transition: all 0.3s ease;
+        }
+
+        .topic:hover {
+            background: #404040;
+            transform: translateX(4px);
+        }
+
+        .topic p { 
+            margin: 0 0 6px; 
+            font-size: 12px;
+            color: var(--white-text);
+        }
+
+        .bar { 
+            height: 7px; 
+            overflow: hidden; 
+            border-radius: 5px; 
+            background: #2F2F2F;
+            border: 1px solid var(--burgundy);
+        }
+
+        .bar i { 
+            display: block; 
+            height: 100%; 
+            border-radius: inherit; 
+            background: var(--burgundy);
+        }
+
+        .topic b { 
+            color: var(--burgundy-light);
+            font-size: 13px; 
+            text-align: right; 
+        }
+
+        .success { 
+            display: none; 
+            margin-top: 12px; 
+            padding: 10px; 
+            border-radius: 7px; 
+            color: var(--cream);
+            background: var(--burgundy);
+            font-size: 12px;
+            border: 1px solid var(--burgundy-light);
+        }
+
+        .success.show { 
+            display: block;
+            animation: slideInDown 0.4s ease;
+        }
+
+        .app-shell.focused-feedback-view .content-grid { 
+            grid-template-columns: 1fr; 
+        }
+
+        .app-shell.focused-feedback-view #feedback-panel, 
+        .app-shell.focused-feedback-view .content-grid > .panel:not(#recent-panel) { 
+            display: none; 
+        }
+
+        .app-shell.focused-feedback-view #recent-panel { 
+            grid-column: 1 / -1; 
+        }
+
+        .app-shell.feedback-form-view .content-grid { 
+            grid-template-columns: 1fr; 
+        }
+
+        .app-shell.feedback-form-view #recent-panel, 
+        .app-shell.feedback-form-view .content-grid > .panel:not(#feedback-panel) { 
+            display: none; 
+        }
+
+        .app-shell.feedback-form-view #feedback-panel { 
+            grid-column: 1 / -1; 
+            max-width: 760px; 
+            margin: 0 auto; 
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        @media (max-width: 1100px) { 
+            .content-grid { grid-template-columns: 1fr; } 
+        }
+
+        @media (min-width: 801px) {
+            .nav-button { min-height: 48px; padding: 14px 16px; font-size: 14px; }
+            .feedback-item { padding: 17px; }
+            .feedback-item h3 { font-size: 17px; }
+            .feedback-item p { font-size: 15px; }
+            .reaction-button, .comment-count-button { min-width: 44px; min-height: 38px; padding: 8px 12px; }
+            .feedback-actions { gap: 8px; }
+            .feed-navigation button { min-height: 42px; font-size: 14px; }
+        }
+
+        @media (max-width: 800px) { 
+            .sidebar { width: 190px; } 
+            main { padding: 25px 20px; } 
+            .panel { padding: 24px; } 
+        }
+
+        @media (max-width: 580px) {
+            .app-shell { display: block; }
+            .sidebar { width: 100%; padding: 11px 12px; }
+            .brand { justify-content: space-between; gap: 8px; margin: 0 4px 11px; }
+            .brand-mark { width: 32px; height: 32px; border-radius: 9px; font-size: 14px; }
+            .brand strong { font-size: 15px; }
+            .brand small { font-size: 9px; }
+            .mobile-account-bar { display: flex; align-items: center; gap: 7px; margin-left: auto; }
+            .mobile-account-bar .account-info { display: none; }
+            .mobile-account-bar .logout-button { padding: 6px 8px; font-size: 10px; white-space: nowrap; }
+            .mobile-account-bar .logout-button { padding: 6px 8px; font-size: 10px; white-space: nowrap; }
+            .nav-label, .tip { display: none; }
+            .nav-button { width: auto; min-height: 32px; padding: 7px 9px; border-width: 1px; border-radius: 7px; font-size: 11px; white-space: nowrap; }
+            .nav-button span { width: 20px; }
+            .nav-button:hover { transform: none; }
+            .sidebar nav { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px; }
+            .topbar { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+            .topbar .main-title { font-size: 22px; }
+            .topbar .subtitle { font-size: 12px; }
+            .topbar .account-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding-top: 4px; }
+            .topbar .account-info { overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+            .topbar .logout-button { display: none; }
+            .account-info { max-width: 115px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .logout-button { padding: 6px 8px; font-size: 10px; }
+            .row { grid-template-columns: 1fr; gap: 0; }
+            main { padding: 18px 12px 28px; }
+            .panel { padding: 16px; border-width: 1px; border-radius: 9px; }
+            .panel-heading { align-items: flex-start; gap: 7px; margin-bottom: 15px; padding-bottom: 9px; border-bottom-width: 1px; }
+            h2 { font-size: 17px; }
+            .panel-heading .tiny-note { font-size: 10px; text-align: right; }
+            .comment-identity { flex: 1 1 140px; }
+            .filter-bar { flex-wrap: wrap; }
+            .filter-bar { gap: 7px; }
+            .filter-bar input, .filter-bar select { flex: 1 1 100%; width: 100%; height: 36px; font-size: 12px; }
+            .feedback-item { padding: 12px; border-left-width: 3px; }
+            .feedback-item h3 { font-size: 14px; }
+            .feedback-item p { font-size: 12px; line-height: 1.5; }
+            .feedback-actions { gap: 4px; }
+            .reaction-button, .comment-count-button, .feedback-edit, .feedback-delete { min-width: 32px; padding: 5px 7px; font-size: 11px; }
+            .feedback-card-footer { align-items: flex-start; gap: 7px; }
+            .feedback-card-date { font-size: 10px; }
+            .feed-navigation { gap: 6px; }
+            .feed-navigation button { flex: 1 1 0; min-width: 0; min-height: 32px; padding: 7px 6px; font-size: 10px; }
+            .auth-card { padding: 22px 18px; }
+            .auth-card .subtitle { font-size: 12px; }
+            .auth-card label { font-size: 12px; }
+            .auth-card input, .auth-card select { height: var(--auth-control-height); min-height: var(--auth-control-height); padding: 7px 10px; font-size: 13px; }
+            .auth-card form { width: var(--auth-control-width); }
+            .status-toast { right: 12px; bottom: 12px; left: 12px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <section class="auth-screen" id="auth-screen">
+        <div class="auth-card">
+            <h1 id="auth-title">FEEDLY</h1>
+            <p class="tiny-note" style="margin-bottom:6px;text-align:center;color:var(--burgundy-light);font-weight:bold;letter-spacing:.5px">Learning Feedback and Evaluation System</p>
+            <p class="subtitle" id="auth-subtitle">Log in to share feedback and join the discussion.</p>
+            <p class="auth-mode" id="auth-mode">Log in</p>
+            <form id="auth-form">
+                <div id="registration-fields" hidden>
+                    <label for="account-name">Full name</label>
+                    <input id="account-name" type="text" autocomplete="name" placeholder="Juan Dela Cruz">
+                    <div class="row">
+                        <div><label for="account-course">Course</label><input id="account-course" type="text" placeholder="BSIT"></div>
+                        <div><label for="account-year">Year</label><select id="account-year"><option value="">Select year</option><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option></select></div>
+                    </div>
+                </div>
+                <label for="auth-email">Email</label>
+                <input id="auth-email" type="email" autocomplete="email" required placeholder="you@example.com">
+                <label for="auth-password">Password</label>
+                <input id="auth-password" type="password" autocomplete="current-password" minlength="6" required placeholder="At least 6 characters">
+                <button class="primary" id="auth-submit" type="submit">Log in</button>
+                <p class="auth-error" id="auth-error" role="alert"></p>
+            </form>
+            <div class="auth-divider" id="auth-divider">No account yet?</div>
+            <button class="auth-switch" id="auth-switch" type="button">Create an account</button>
+        </div>
+    </section>
+
+    <div class="app-shell" id="app-shell" hidden>
+        <div class="status-toast" id="status-toast" role="status" aria-live="polite">Successfully changed.</div>
+        <aside class="sidebar">
+            <div class="brand"><div class="brand-mark">F</div><div><strong>FEEDLY</strong><small>Learning Feedback & Evaluation</small></div><div class="mobile-account-bar"><div class="account-info" id="mobile-account-info"></div><button class="logout-button" id="mobile-logout-button" type="button">Log out</button></div></div>
+            <p class="nav-label">MENU</p>
+            <nav>
+                <button class="nav-button active" type="button" data-view="all"><span>☷</span>All feedback</button>
+                <button class="nav-button" type="button" data-view="give"><span>＋</span>Give feedback</button>
+                <button class="nav-button" type="button" data-view="mine"><span>♡</span>My feedback</button>
+            </nav>
+            <div class="tip"><b>Small thoughts matter.</b>Your feedback helps make the next activity better for everyone.</div>
+        </aside>
+
+        <main>
+            <header class="topbar">
+                <div><h1 class="main-title">Learning Feedback</h1><p class="subtitle">A shared space for honest thoughts, comments, and suggestions.</p></div>
+                <div class="account-bar"><div class="account-info" id="account-info"></div><button class="logout-button" id="logout-button" type="button">Log out</button></div>
+            </header>
+
+            <div class="content-grid">
+                <section class="panel" id="feedback-panel">
+                    <div class="panel-heading"><h2>Share your feedback</h2><span class="tiny-note">Takes less than a minute</span></div>
+                    <form id="feedback-form">
+                        <p class="tiny-note" id="feedback-identity-note">Your account name will be used when you choose to show your identity.</p>
+                        <div class="anonymous-choice">
+                            <span>Post this feedback anonymously</span>
+                            <button type="button" id="anonymous-feedback-toggle" class="toggle-pill" aria-label="Toggle anonymous feedback" aria-pressed="false"><span class="toggle-knob"></span></button>
+                        </div>
+                        <div class="row">
+                            <div><label for="subject">Subject name</label><input id="subject" type="text" placeholder="Example: AL" required></div>
+                            <div><label for="recipient">Teacher name</label><input id="recipient" type="text" placeholder="Example: Ms. Santos" required></div>
+                        </div>
+                        <div class="row">
+                            <div><label for="activity">Activity or assessment <span class="tiny-note">(optional)</span></label><input id="activity" type="text" placeholder="Type any activity or leave blank"></div>
+                            <div><label for="feedback-type">Feedback type</label><select id="feedback-type" required><option value="">What is this about?</option><option>Activity difficulty</option><option>Topic clarification</option><option>Suggestion</option><option>Appreciation</option></select></div>
+                        </div>
+                        <label>How was your experience?</label>
+                        <div class="rating" id="rating" aria-label="Activity rating">
+                            <button type="button" data-rating="1">1</button>
+                            <button type="button" data-rating="2">2</button>
+                            <button type="button" data-rating="3">3</button>
+                            <button type="button" data-rating="4">4</button>
+                            <button type="button" data-rating="5">5</button>
+                        </div>
+                        <label for="message">Your thoughts</label>
+                        <textarea id="message" placeholder="Example: The quiz was a little difficult because..." required></textarea>
+                        <label for="topic">Specific topic <span class="tiny-note">(optional)</span></label>
+                        <input id="topic" type="text" placeholder="Example: languages">
+                        <button class="primary" type="submit">Submit feedback</button>
+                        <div class="success" id="success-message">Thanks! Your feedback has been posted</div>
+                    </form>
+                </section>
+
+                <section class="panel" id="recent-panel">
+                    <div class="panel-heading"><h2 id="feedback-heading">Latest feedback</h2><span class="tiny-note" id="response-count">0 shown</span></div>
+                    <div class="filter-bar">
+                        <input id="search" type="search" placeholder="Search responses...">
+                        <select id="type-filter">
+                            <option value="all">All types</option>
+                            <option>Activity difficulty</option>
+                            <option>Topic clarification</option>
+                            <option>Suggestion</option>
+                            <option>Appreciation</option>
+                        </select>
+                    </div>
+                    <div class="feedback-list" id="feedback-list"></div>
+                </section>
+
+                <section class="panel"><div class="panel-heading"><h2>Topics students mention</h2><span class="tiny-note">based on responses</span></div><div class="topic-list" id="topic-list"><div class="empty">Add a topic in your feedback to see it here.</div></div></section>
+                <section class="panel"><div class="panel-heading"><h2>Quick reminder</h2></div><p style="color:var(--white-text);font-size:13px;line-height:1.6;margin-bottom:0">You may show your name or post anonymously. Everyone can react and comment respectfully.</p></section>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-analytics.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, addDoc, updateDoc, deleteDoc, increment, arrayUnion, onSnapshot, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6qX9RHJxTNTayJXhtuR9N0Kpy063glAs",
+            authDomain: "feedback-bf89a.firebaseapp.com",
+            projectId: "feedback-bf89a",
+            storageBucket: "feedback-bf89a.firebasestorage.app",
+            messagingSenderId: "301237353899",
+            appId: "1:301237353899:web:14ea6f464eec8f0f3f66ee",
+            measurementId: "G-3JNWRVCPX6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        getAnalytics(app);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let currentUser = null;
+        let currentProfile = null;
+
+        const defaultReactions = () => ({ up: 0, heart: 0, down: 0 });
+        const escapeHtml = (value) => String(value || "").replace(/[&<>\"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#039;" }[character]));
+
+        const normalizeReply = (reply = {}) => ({
+            ...reply,
+            author: reply.author || "Anonymous",
+            role: reply.role || "student",
+            anonymous: reply.anonymous ?? false,
+            reactions: { ...defaultReactions(), ...(reply.reactions || {}) }
+        });
+
+        const normalizeResponse = (item = {}) => ({
+            ...item,
+            ownerId: item.ownerId || item.userId || "",
+            author: item.author || "Anonymous",
+            course: item.course || "",
+            year: item.year || "",
+            role: item.role || "student",
+            recipient: item.recipient || "Teacher",
+            anonymous: item.anonymous ?? !item.author,
+            reactions: { ...defaultReactions(), ...(item.reactions || {}) },
+            replies: (item.replies || (item.reply ? [{ author: "Teacher", role: "teacher", anonymous: false, message: item.reply, reactions: defaultReactions() }] : [])).map(normalizeReply)
+        });
+
+        let responses = [];
+
+        let selectedRating = 0;
+        let currentView = "all";
+        let selectedFeedbackDate = null;
+        let editingFeedbackDate = null;
+        let feedPage = 0;
+        const form = document.querySelector("#feedback-form");
+        const list = document.querySelector("#feedback-list");
+        const anonymousFeedbackToggle = document.getElementById("anonymous-feedback-toggle");
+        const authScreen = document.getElementById("auth-screen");
+        const appShell = document.getElementById("app-shell");
+        const authForm = document.getElementById("auth-form");
+        const authSwitch = document.getElementById("auth-switch");
+        const registrationFields = document.getElementById("registration-fields");
+        let isRegistering = false;
+        let unsubscribeFeedback = null;
+        let statusToastTimer = null;
+
+        function setToggleState(toggleButton, enabled) {
+            if (!toggleButton) return;
+            toggleButton.classList.toggle("on", enabled);
+            toggleButton.setAttribute("aria-pressed", String(enabled));
+            toggleButton.dataset.enabled = String(enabled);
+        }
+
+        function showStatusToast(message) {
+            const toast = document.querySelector("#status-toast");
+            toast.textContent = message;
+            toast.classList.add("show");
+            clearTimeout(statusToastTimer);
+            statusToastTimer = setTimeout(() => toast.classList.remove("show"), 3500);
+        }
+
+        setToggleState(anonymousFeedbackToggle, false);
+        anonymousFeedbackToggle.addEventListener("click", () => {
+            const active = anonymousFeedbackToggle.dataset.enabled === "true";
+            setToggleState(anonymousFeedbackToggle, !active);
+        });
+
+        document.querySelectorAll(".rating button").forEach((button) => {
+            button.addEventListener("click", () => {
+                selectedRating = Number(button.dataset.rating);
+                document.querySelectorAll(".rating button").forEach((item) => {
+                    item.classList.toggle("selected", Number(item.dataset.rating) <= selectedRating);
+                });
+            });
+        });
+
+        function formatDate(date) {
+            return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(date));
+        }
+
+        function titleCase(value) {
+            return String(value || "").trim().toLowerCase().replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
+        }
+
+        function sentenceCase(value) {
+            const text = String(value || "").trim().toLowerCase();
+            return text ? text.charAt(0).toUpperCase() + text.slice(1) : "";
+        }
+
+        function displayValue(value, kind = "text") {
+            return escapeHtml(kind === "name" ? titleCase(value) : kind === "sentence" ? sentenceCase(value) : value);
+        }
+
+        function reactionButtons(type, id, reactions, replyIndex = "") {
+            return ["up", "heart", "down"].map((value) => {
+                const label = value === "up" ? "👍" : value === "heart" ? "♥" : "👎";
+                return `<button class="${type} ${reactions[value] ? "reacted" : ""}" type="button" data-reaction-id="${id}" data-reply-index="${replyIndex}" data-reaction-value="${value}">${label} ${reactions[value]}</button>`;
+            }).join("");
+        }
+
+        function commentReactionButtons(feedbackId, commentIndex, reactions) {
+            return reactionButtons("comment-reaction", feedbackId, reactions, commentIndex);
+        }
+
+        function commentAuthorMarkup(comment) {
+            if (comment.anonymous) return "Anonymous";
+            return `${displayValue(comment.author, "name")} <span class="tiny-note">${displayValue(comment.year)} · ${displayValue(comment.course, "name")}</span>`;
+        }
+
+        function highlightSearch(text, searchTerm) {
+            if (!searchTerm) return escapeHtml(text);
+            const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+            return escapeHtml(text).replace(regex, (match) => `<span class="highlight">${match}</span>`);
+        }
+
+        function render() {
+            const searchTerm = document.querySelector("#search").value.toLowerCase();
+            const filter = document.querySelector("#type-filter").value;
+            let visible = responses.filter((item) => {
+                const matchesType = filter === "all" || item.type === filter;
+                const haystack = `${item.subject} ${item.activity} ${item.message} ${item.topic} ${item.author} ${item.recipient}`.toLowerCase();
+                return matchesType && haystack.includes(searchTerm);
+            });
+
+            if (currentView === "mine") visible = visible.filter((item) => currentUser && item.ownerId === currentUser.uid);
+            visible.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            const shown = visible;
+            const heading = currentView === "mine" ? "My feedback" : currentView === "give" ? "Give feedback" : "All feedback";
+            document.querySelector(".app-shell").classList.toggle("focused-feedback-view", Boolean(selectedFeedbackDate) || currentView === "mine" || currentView === "all");
+            document.querySelector(".app-shell").classList.toggle("detail-view", Boolean(selectedFeedbackDate));
+            document.querySelector("#feedback-heading").textContent = heading;
+            document.querySelector("#response-count").textContent = `${shown.length} shown`;
+
+            const cardMarkup = (item) => {
+                const itemAuthor = item.anonymous ? "Anonymous" : displayValue(item.author, "name");
+                const identityDetails = item.anonymous ? "" : `<span class="tiny-note">${displayValue(item.year)} · ${displayValue(item.course, "name")}</span>`;
+                const recipientLabel = item.recipient ? displayValue(item.recipient, "name") : "";
+                const ownerActions = currentView === "mine" && currentUser?.uid === item.ownerId ? `<div class="feedback-owner-actions"><button class="feedback-edit" type="button" data-feedback-edit="${escapeHtml(item.date)}">Edit</button><button class="feedback-delete" type="button" data-feedback-delete="${escapeHtml(item.id)}">Delete</button></div>` : "";
+                return `
+                    <article class="feedback-item" tabindex="0" role="button" data-feedback="${escapeHtml(item.date)}">
+                        <div class="feedback-card-header"><h3>${itemAuthor}</h3>${ownerActions}</div>
+                        <div class="post-content">
+                            <p><b>Subject:</b> ${highlightSearch(item.subject, searchTerm)} ${identityDetails}</p>
+                            <p><b>Thoughts:</b> ${highlightSearch(item.message, searchTerm)}</p>
+                            ${recipientLabel ? `<p class="teacher-inline"><strong>Teacher:</strong> ${highlightSearch(recipientLabel, searchTerm)}</p>` : ""}
+                            <span class="teacher-stars">${"★".repeat(Number(item.rating || 0))}</span>
+                            <div class="feedback-card-footer">
+                                <div class="feedback-actions" aria-label="Feedback reactions and comments">
+                                    ${reactionButtons("reaction-button", item.date, item.reactions)}
+                                    <button class="comment-count-button" type="button" data-comment-open="${escapeHtml(item.date)}" aria-label="Open ${item.replies.length} comments">💬 ${item.replies.length}</button>
+                                </div>
+                                <time class="feedback-card-date" datetime="${escapeHtml(item.date)}">${formatDate(item.date)}</time>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            };
+
+            if (selectedFeedbackDate) {
+                const item = responses.find((response) => response.date === selectedFeedbackDate);
+                if (!item) {
+                    selectedFeedbackDate = null;
+                } else {
+                    if (editingFeedbackDate === item.date) {
+                        document.querySelector("#feedback-heading").textContent = "Edit feedback";
+                        document.querySelector("#response-count").textContent = "";
+                        list.innerHTML = `
+                            <div class="feedback-detail">
+                                <button class="back-button" type="button" data-edit-back>← Back</button>
+                                <form class="feedback-edit-form" data-edit-form="${escapeHtml(item.id)}">
+                                    <p class="tiny-note">Switch your feedback identity if needed.</p>
+                                    <div class="anonymous-choice">
+                                        <span>Post this feedback anonymously</span>
+                                        <button type="button" class="edit-anonymous-toggle toggle-pill" aria-label="Toggle anonymous feedback" aria-pressed="false" data-enabled="${item.anonymous ? 'true' : 'false'}"><span class="toggle-knob"></span></button>
+                                    </div>
+                                    <label for="edit-subject">Subject</label>
+                                    <input id="edit-subject" name="subject" value="${escapeHtml(item.subject)}" placeholder="Example: AL" required>
+                                    <label for="edit-recipient">Teacher</label>
+                                    <input id="edit-recipient" name="recipient" value="${escapeHtml(item.recipient)}" placeholder="Example: Ms. Santos">
+                                    <label for="edit-activity">Activity or assessment</label>
+                                    <input id="edit-activity" name="activity" value="${escapeHtml(item.activity)}" placeholder="Type any activity or leave blank">
+                                    <label for="edit-topic">Specific topic</label>
+                                    <input id="edit-topic" name="topic" value="${escapeHtml(item.topic)}" placeholder="Example: languages">
+                                    <label for="edit-message">Thoughts</label>
+                                    <textarea id="edit-message" name="message" placeholder="Edit your thoughts..." required>${escapeHtml(item.message)}</textarea>
+                                    <div class="edit-actions"><button class="primary" type="submit">Save</button></div>
+                                </form>
+                            </div>
+                        `;
+                        bindFeedbackInteractions();
+                        return;
+                    }
+                    const itemAuthor = item.anonymous ? "Anonymous" : displayValue(item.author, "name");
+                    const identityDetails = item.anonymous ? "" : `<span class="tiny-note">${displayValue(item.year)} · ${displayValue(item.course)}</span>`;
+                    const comments = [...item.replies].sort((a, b) => new Date(b.date || item.date) - new Date(a.date || item.date));
+                    const isOwnFeedback = currentUser && item.ownerId === currentUser.uid;
+                    document.querySelector("#feedback-heading").textContent = "Feedback details";
+                    document.querySelector("#response-count").textContent = "";
+                    list.innerHTML = `
+                        <div class="feedback-detail">
+                            <button class="back-button" type="button" data-back-to-list>← Back to feedback</button>
+                            <article class="feedback-detail-card">
+                                <h3>${itemAuthor}</h3>
+                                <p><b>Subject:</b> ${displayValue(item.subject, "sentence")} ${identityDetails}</p>
+                                <div class="thoughts-box">${displayValue(item.message, "sentence")}</div>
+                                ${item.activity ? `<p><b>Activity/Assessment:</b> ${displayValue(item.activity, "sentence")}</p>` : ""}
+                                ${item.topic ? `<p><b>Specific topic:</b> ${displayValue(item.topic, "sentence")}</p>` : ""}
+                                ${item.recipient ? `<p class="teacher-inline"><strong>Teacher:</strong> ${displayValue(item.recipient, "name")}</p>` : ""}
+                                <span class="teacher-stars">${"★".repeat(Number(item.rating || 0))}</span>
+                                <p class="feedback-date">Posted ${formatDate(item.date)}</p>
+                                <div class="feedback-actions">${reactionButtons("reaction-button", item.date, item.reactions)}</div>
+                            </article>
+                            <h3 class="comment-heading">Write a comment</h3>
+                            <form class="comment-form" data-comment="${escapeHtml(item.date)}">
+                                <input type="text" placeholder="Write a comment..." required>
+                                <div class="anonymous-comment-toggle">
+                                    <span>Anonymous</span>
+                                    <button type="button" id="anonymous-comment-toggle" class="toggle-pill" aria-label="Toggle anonymous comment" aria-pressed="false" data-enabled="false"><span class="toggle-knob"></span></button>
+                                </div>
+                                <button type="submit">Comment</button>
+                            </form>
+                            <h3 class="comment-heading">Comments (${comments.length})</h3>
+                            <div class="comment-list">${comments.length ? comments.map((comment, commentIndex) => {
+                                const canDelete = currentView === "mine" && isOwnFeedback;
+                                const deleteBtn = canDelete ? `<button class="comment-delete-btn" type="button" data-delete-comment="${item.id}" data-reply-index="${item.replies.indexOf(comment)}" title="Delete comment">🗑</button>` : "";
+                                return `<article class="comment-item">${deleteBtn}<span class="comment-author">${commentAuthorMarkup(comment)}</span><p>${displayValue(comment.message, "sentence")}</p><div class="comment-footer"><div class="comment-reactions">${commentReactionButtons(item.id, item.replies.indexOf(comment), comment.reactions)}</div><time class="feedback-date" datetime="${escapeHtml(comment.date || item.date)}">${formatDate(comment.date || item.date)}</time></div></article>`;
+                            }).join("") : `<div class="empty">No comments yet.</div>`}</div>
+                        </div>
+                    `;
+                    bindFeedbackInteractions();
+                    return;
+                }
+            }
+
+            const pageCount = Math.max(1, Math.ceil(shown.length / 10));
+            feedPage = Math.min(feedPage, pageCount - 1);
+            const pageStart = feedPage * 10;
+            const pageItems = shown.slice(pageStart, pageStart + 10);
+            const hasPrevious = feedPage > 0;
+            const hasMore = feedPage < pageCount - 1;
+            const showNewest = feedPage > 0;
+            const navigation = shown.length ? `<div class="feed-navigation" aria-label="Feed navigation"><button type="button" data-feed-previous ${hasPrevious ? "" : "hidden"}>Previous</button><button type="button" data-feed-newest ${showNewest ? "" : "hidden"}>Back to newest feed</button><button type="button" data-feed-more ${hasMore ? "" : "hidden"}>Show more</button></div>` : "";
+            list.innerHTML = shown.length ? pageItems.map(cardMarkup).join("") + navigation : `<div class="empty">${currentView === "mine" ? "You have not sent any feedback yet." : "No feedback found yet."}</div>`;
+
+            bindFeedbackInteractions();
+        }
+
+        function bindFeedbackInteractions() {
+            document.querySelectorAll("[data-feedback]").forEach((card) => {
+                const openFeedback = () => {
+                    selectedFeedbackDate = card.dataset.feedback;
+                    render();
+                };
+                card.addEventListener("click", openFeedback);
+                card.addEventListener("keydown", (event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        openFeedback();
+                    }
+                });
+            });
+
+            document.querySelectorAll("[data-reaction-id]").forEach((button) => {
+                button.addEventListener("click", async (event) => {
+                    event.stopPropagation();
+                    const response = responses.find((item) => item.date === button.dataset.reactionId || item.id === button.dataset.reactionId);
+                    if (response) {
+                        if (button.dataset.replyIndex !== "") {
+                            const replies = response.replies.map((reply) => ({ ...reply, reactions: { ...defaultReactions(), ...(reply.reactions || {}) } }));
+                            const replyIndex = Number(button.dataset.replyIndex);
+                            if (!replies[replyIndex]) return;
+                            replies[replyIndex].reactions[button.dataset.reactionValue] += 1;
+                            await updateDoc(doc(db, "feedback", response.id), { replies });
+                        } else {
+                            await updateDoc(doc(db, "feedback", response.id), { [`reactions.${button.dataset.reactionValue}`]: increment(1) });
+                        }
+                    }
+                });
+            });
+
+            document.querySelectorAll("[data-comment-open]").forEach((button) => {
+                button.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    selectedFeedbackDate = button.dataset.commentOpen;
+                    render();
+                });
+            });
+
+            document.querySelectorAll("[data-feedback-edit]").forEach((button) => {
+                button.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    const response = responses.find((item) => item.date === button.dataset.feedbackEdit);
+                    if (!response || response.ownerId !== currentUser?.uid) return;
+                    selectedFeedbackDate = response.date;
+                    editingFeedbackDate = response.date;
+                    render();
+                });
+            });
+
+            document.querySelectorAll("[data-edit-back]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    editingFeedbackDate = null;
+                    render();
+                });
+            });
+
+            document.querySelectorAll("[data-edit-form]").forEach((editForm) => {
+                const anonToggle = editForm.querySelector(".edit-anonymous-toggle");
+                if (anonToggle) {
+                    setToggleState(anonToggle, anonToggle.dataset.enabled === "true");
+                    anonToggle.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        const active = anonToggle.dataset.enabled === "true";
+                        setToggleState(anonToggle, !active);
+                    });
+                }
+                editForm.addEventListener("submit", async (event) => {
+                    event.preventDefault();
+                    if (!window.confirm("Save these changes?")) return;
+                    const response = responses.find((item) => item.id === editForm.dataset.editForm);
+                    if (!response || response.ownerId !== currentUser?.uid) return;
+                    const data = new FormData(editForm);
+                    const isAnonymous = anonToggle && anonToggle.dataset.enabled === "true";
+                    await updateDoc(doc(db, "feedback", response.id), {
+                        subject: sentenceCase(data.get("subject")),
+                        recipient: titleCase(data.get("recipient")),
+                        activity: sentenceCase(data.get("activity")),
+                        topic: sentenceCase(data.get("topic")),
+                        message: sentenceCase(data.get("message")),
+                        anonymous: isAnonymous,
+                        author: isAnonymous ? "Anonymous" : titleCase(currentProfile.name),
+                        course: isAnonymous ? "" : titleCase(currentProfile.course),
+                        year: isAnonymous ? "" : currentProfile.year,
+                        updatedAt: serverTimestamp()
+                    });
+                    editingFeedbackDate = null;
+                    showStatusToast("Successfully changed.");
+                });
+            });
+
+            document.querySelectorAll("[data-feedback-delete]").forEach((button) => {
+                button.addEventListener("click", async (event) => {
+                    event.stopPropagation();
+                    const response = responses.find((item) => item.id === button.dataset.feedbackDelete);
+                    if (!response || response.ownerId !== currentUser?.uid) return;
+                    if (window.confirm("Delete this feedback permanently?")) {
+                        await deleteDoc(doc(db, "feedback", response.id));
+                    }
+                });
+            });
+
+            document.querySelectorAll("[data-back-to-list]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    selectedFeedbackDate = null;
+                    editingFeedbackDate = null;
+                    render();
+                });
+            });
+
+            document.querySelectorAll("[data-feed-more]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    if (button.hidden) return;
+                    feedPage += 1;
+                    render();
+                });
+            });
+
+            document.querySelectorAll("[data-feed-previous]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    if (button.hidden) return;
+                    feedPage = Math.max(0, feedPage - 1);
+                    render();
+                });
+            });
+
+            document.querySelectorAll("[data-feed-newest]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    if (button.hidden) return;
+                    feedPage = 0;
+                    render();
+                });
+            });
+
+            document.querySelectorAll("[data-comment]").forEach((commentForm) => {
+                const anonToggle = commentForm.querySelector("#anonymous-comment-toggle");
+                if (anonToggle) {
+                    setToggleState(anonToggle, false);
+                    anonToggle.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        const active = anonToggle.dataset.enabled === "true";
+                        setToggleState(anonToggle, !active);
+                    });
+                }
+                commentForm.addEventListener("submit", async (event) => {
+                    event.preventDefault();
+                    const response = responses.find((item) => item.date === commentForm.dataset.comment);
+                    const input = commentForm.querySelector("input[type=text]");
+                    const anonToggle = commentForm.querySelector("#anonymous-comment-toggle");
+                    const isAnonymous = anonToggle && anonToggle.dataset.enabled === "true";
+                    const message = input.value.trim();
+                    const commentName = currentProfile?.name || "Anonymous";
+
+                    if (response && message) {
+                        const comment = {
+                            author: isAnonymous ? "Anonymous" : titleCase(commentName),
+                            role: "student",
+                            anonymous: isAnonymous,
+                            course: isAnonymous ? "" : titleCase(currentProfile.course),
+                            year: isAnonymous ? "" : currentProfile.year,
+                            message: sentenceCase(message),
+                            reactions: defaultReactions(),
+                            date: new Date().toISOString(),
+                            userId: currentUser.uid
+                        };
+                        await updateDoc(doc(db, "feedback", response.id), { replies: arrayUnion(comment) });
+                        input.value = "";
+                        setToggleState(anonToggle, false);
+                    }
+                });
+            });
+
+            document.querySelectorAll("[data-delete-comment]").forEach((button) => {
+                button.addEventListener("click", async (event) => {
+                    event.stopPropagation();
+                    if (!window.confirm("Delete this comment?")) return;
+                    const feedbackId = button.dataset.deleteComment;
+                    const replyIndex = Number(button.dataset.replyIndex);
+                    const response = responses.find((item) => item.id === feedbackId);
+                    if (response && response.replies[replyIndex]) {
+                        const updatedReplies = response.replies.filter((_, idx) => idx !== replyIndex);
+                        await updateDoc(doc(db, "feedback", feedbackId), { replies: updatedReplies });
+                    }
+                });
+            });
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            if (!selectedRating) {
+                alert("Please select a rating first.");
+                return;
+            }
+
+            const target = document.querySelector("#recipient").value.trim() || "Teacher";
+            const isAnonymousFeedback = anonymousFeedbackToggle.dataset.enabled === "true";
+            const response = {
+                subject: sentenceCase(document.querySelector("#subject").value),
+                ownerId: currentUser.uid,
+                author: isAnonymousFeedback ? "Anonymous" : currentProfile.name,
+                course: isAnonymousFeedback ? "" : currentProfile.course,
+                year: isAnonymousFeedback ? "" : currentProfile.year,
+                role: "student",
+                recipient: titleCase(target),
+                anonymous: isAnonymousFeedback,
+                activity: sentenceCase(document.querySelector("#activity").value),
+                type: document.querySelector("#feedback-type").value,
+                rating: selectedRating,
+                message: sentenceCase(document.querySelector("#message").value),
+                topic: sentenceCase(document.querySelector("#topic").value),
+                reactions: defaultReactions(),
+                replies: [],
+                date: new Date().toISOString(),
+                createdAt: serverTimestamp()
+            };
+
+            await addDoc(collection(db, "feedback"), response);
+            form.reset();
+            setToggleState(anonymousFeedbackToggle, false);
+            selectedRating = 0;
+            document.querySelectorAll(".rating button").forEach((item) => item.classList.remove("selected"));
+            document.querySelector("#success-message").classList.add("show");
+            render();
+            setTimeout(() => document.querySelector("#success-message").classList.remove("show"), 3500);
+        });
+
+        document.querySelector("#search").addEventListener("input", () => { feedPage = 0; render(); });
+        document.querySelector("#type-filter").addEventListener("change", () => { feedPage = 0; render(); });
+        document.querySelectorAll("[data-view]").forEach((button) => {
+            button.addEventListener("click", () => {
+                currentView = button.dataset.view;
+                selectedFeedbackDate = null;
+                feedPage = 0;
+                document.querySelectorAll("[data-view]").forEach((item) => item.classList.toggle("active", item.dataset.view === currentView));
+                document.querySelectorAll(".nav-button").forEach((item) => item.classList.toggle("active", item.dataset.view === currentView));
+                document.querySelector(".app-shell").classList.toggle("focused-feedback-view", currentView === "mine" || currentView === "all");
+                document.querySelector(".app-shell").classList.toggle("feedback-form-view", currentView === "give");
+                document.getElementById(currentView === "give" ? "feedback-panel" : "recent-panel").scrollIntoView({ behavior: "smooth" });
+                render();
+            });
+        });
+
+        authSwitch.addEventListener("click", () => {
+            isRegistering = !isRegistering;
+            registrationFields.hidden = !isRegistering;
+            document.getElementById("auth-title").textContent = isRegistering ? "Create your FEEDLY account" : "FEEDLY";
+            document.getElementById("auth-subtitle").textContent = isRegistering ? "Fill in your student information to continue." : "Log in to share feedback and join the discussion.";
+            document.getElementById("auth-mode").textContent = isRegistering ? "Create account" : "Log in";
+            document.getElementById("auth-submit").textContent = isRegistering ? "Create account" : "Log in";
+            authSwitch.textContent = isRegistering ? "I already have an account" : "Create an account";
+            document.getElementById("auth-divider").textContent = isRegistering ? "Already have an account?" : "No account yet?";
+            document.getElementById("account-name").required = isRegistering;
+            document.getElementById("account-course").required = isRegistering;
+            document.getElementById("account-year").required = isRegistering;
+            document.getElementById("auth-error").textContent = "";
+        });
+
+        authForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const errorBox = document.getElementById("auth-error");
+            errorBox.textContent = "";
+            try {
+                const email = document.getElementById("auth-email").value.trim();
+                const password = document.getElementById("auth-password").value;
+                if (isRegistering) {
+                    const profile = {
+                        name: titleCase(document.getElementById("account-name").value),
+                        course: titleCase(document.getElementById("account-course").value),
+                        year: document.getElementById("account-year").value
+                    };
+                    const credentials = await createUserWithEmailAndPassword(auth, email, password);
+                    await setDoc(doc(db, "users", credentials.user.uid), { ...profile, email, createdAt: serverTimestamp() });
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                }
+            } catch (error) {
+                errorBox.textContent = error.code === "auth/email-already-in-use" ? "This email already has an account." : error.code === "auth/invalid-credential" ? "Incorrect email or password." : error.message;
+            }
+        });
+
+        const logout = () => {
+            if (window.confirm("Are you sure you want to log out?")) signOut(auth);
+        };
+        document.getElementById("logout-button").addEventListener("click", logout);
+        document.getElementById("mobile-logout-button").addEventListener("click", logout);
+
+        onAuthStateChanged(auth, async (user) => {
+            currentUser = user;
+            if (!user) {
+                currentProfile = null;
+                authScreen.hidden = false;
+                appShell.hidden = true;
+                if (unsubscribeFeedback) unsubscribeFeedback();
+                return;
+            }
+
+            const profileSnapshot = await getDoc(doc(db, "users", user.uid));
+            currentProfile = profileSnapshot.exists() ? profileSnapshot.data() : { name: user.email, course: "", year: "" };
+            const accountMarkup = `<strong>${escapeHtml(currentProfile.name)}</strong>${escapeHtml(currentProfile.year)} · ${escapeHtml(currentProfile.course)}`;
+            document.getElementById("account-info").innerHTML = accountMarkup;
+            document.getElementById("mobile-account-info").innerHTML = accountMarkup;
+            document.getElementById("feedback-identity-note").textContent = `Signed in as ${currentProfile.name}. Your name, year, and course appear when you choose not to be anonymous.`;
+            authScreen.hidden = true;
+            appShell.hidden = false;
+
+            if (unsubscribeFeedback) unsubscribeFeedback();
+            unsubscribeFeedback = onSnapshot(collection(db, "feedback"), (snapshot) => {
+                responses = snapshot.docs.map((feedbackDoc) => normalizeResponse({ ...feedbackDoc.data(), id: feedbackDoc.id }));
+                render();
+            }, (error) => {
+                document.getElementById("response-count").textContent = "Unable to load feedback";
+                console.error(error);
+            });
+        });
+
+        render();
+    </script>
+</body>
+</html>
